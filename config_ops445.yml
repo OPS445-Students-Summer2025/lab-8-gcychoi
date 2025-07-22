@@ -1,0 +1,79 @@
+- name: Configure system with Apache, hostname, and Seneca user
+  hosts: cychoi
+  user: student
+  become: true
+  vars:
+    seneca_id: cychoi
+    apache_version: latest
+    ssh_pub_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC4CyJOm5lLUsv/AqY+GbbcnXlBCr7XQpiRN4byjjOMg5UEIHR9SKkjx0S9PV8qx04vexk842vx1hAZgadYpGCDozgUU/H6TAQJWFRxV8M/vhyshBqbLAWEZPtZ4VPF/eyfZY/xlzU6TGBSHKLOAd58xqpJSWuod1rIN3scfXB2pgcVTHbTLBwGPe3vlON/OseotPRVpkpV4lm2fkhVmr4XMCYTmWiGlHvxHnR3CqC9ZSGPL6T9LVZ2iKeKHmLOiBtTpLqwxCKDYh4L1dRDxjQYxzy8Rhn6v4D5IMrfWLeKGbY/q2rR0HFXRJWK1RSjnwgNxC4j+4B+hUlYHqqxWxETnbUkm2dZEMpkaom2L7wdIYbDKq/YRRBsuONmXovfdGihi92W7vH1UBavnpd7zrAKVT+41Zp2uFZyLTbcGmqz682LPjnINpihfVeIIaGm69RVJ67l/cugdEnym2XYlKfDwKWYsys7bN3KI4Hc46rBOK7uGRxdGoNUkKZScGw623FVDXpuMh4VvT7Y9U3aZOjWxVHumnnDi7x20DYTkRRHqWKWa8PjcZB+i8cITK2SYhqYPfypjHplnV7HR6Mndjmuz4lqrl4GBNoRE5Im0vQ7uo4Z7YkKbd/Lpx1KGa6xoJL2iPeTYWJICr07hI4hi5YlbakAG/nuohJM0Usq+I5Xiw== cychoi@gmail.com
+"  
+
+  tasks:
+    - name: Ensure EPEL repository is installed
+      yum:
+        name: epel-release
+        state: present
+
+    - name: Ensure Apache (httpd) is installed
+      yum:
+        name: httpd
+        state: present
+
+    - name: Update Apache (httpd) to latest version
+      yum:
+        name: httpd
+        state: "{{ apache_version }}"
+
+    - name: Ensure Apache (httpd) service is started and enabled
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+    - name: Remove the tree package if installed
+      yum:
+        name: tree
+        state: absent
+
+    - name: Set the hostname to Seneca ID
+      hostname:
+        name: "cychoi"
+
+    - name: Create a user with your Seneca ID
+      user:
+        name: "cychoi"
+        shell: /bin/bash
+        state: present
+        create_home: yes
+
+    - name: Add user to sudoers
+      user:
+        name: "cychoi"
+        groups: wheel
+        append: yes
+
+    - name: Create .ssh directory in user's home
+      file:
+        path: "/home/cychoi/.ssh"
+        state: directory
+        owner: "cychoi"
+        group: "cychoi"
+        mode: '0700'
+
+    - name: Add authorized_keys for passwordless SSH
+      copy:
+        content: "{{ ssh_pub_key }}"
+        dest: "/home/cychoi/.ssh/authorized_keys"
+        owner: "cychoi"
+        group: "cychoi"
+        mode: '0600'
+
+    - name: Create lab directories 1 to 8 under ops445
+      file:
+        path: "/home/cychoi/ops445/lab{{ item }}"
+        state: directory
+        owner: "cychoi"
+        group: "cychoi"
+        mode: '0755'
+      loop: "{{ range(1,9) | list }}"
+
+
